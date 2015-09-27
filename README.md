@@ -10,6 +10,8 @@ file which contains the (ASCII) header, and a `*.cam` file which
 contains the camera data.  The `*.cam` file is a raw byte dump, and is
 compatible with the NRRD "raw" file.
 
+## Usage
+
 Read Imagine files like this:
 ```jl
 using Images
