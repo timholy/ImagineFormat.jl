@@ -9,14 +9,14 @@ export imagine2nrrd, Micron
 Micron = SIUnits.NonSIUnit{typeof(Meter),:µm}()
 convert(::Type{SIUnits.SIQuantity},::typeof(Micron)) = Micro*Meter
 
-function FileIO.load(f::File{format"Imagine"})
+function FileIO.load(f::File{format"Imagine"}; mode="r+")
     open(f) do s
         skipmagic(s)
-        load(s)
+        load(s, mode=mode)
     end
 end
 
-function FileIO.load(io::Stream{format"Imagine"})
+function FileIO.load(io::Stream{format"Imagine"}; mode="r+")
     s = stream(io)
     h = parse_header(s)
     filename = s.name[7:end-1]
@@ -51,8 +51,7 @@ function FileIO.load(io::Stream{format"Imagine"})
             println("Truncating to ", n_stacks, length(sz) == 4 ? " stacks" : " frames")
             sz[end] = n_stacks
         end
-        #sc = open(camfilename, "r")
-        data = Mmap.mmap(camfilename, Array{T,length(sz)}, tuple(sz...))
+        data = SharedArray(camfilename, T, tuple(sz...), mode=mode)
     end
     um_per_pixel = h["um per pixel"]*µm
     pstart = h["piezo"]["stop position"]
