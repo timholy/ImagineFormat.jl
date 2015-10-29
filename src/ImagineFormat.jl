@@ -9,14 +9,14 @@ export imagine2nrrd, Micron
 Micron = SIUnits.NonSIUnit{typeof(Meter),:µm}()
 convert(::Type{SIUnits.SIQuantity},::typeof(Micron)) = Micro*Meter
 
-function FileIO.load(f::File{format"Imagine"}; mode="r+")
     open(f) do s
+function FileIO.load(f::File{format"Imagine"}; mode="r")
         skipmagic(s)
         load(s, mode=mode)
     end
 end
 
-function FileIO.load(io::Stream{format"Imagine"}; mode="r+")
+function FileIO.load(io::Stream{format"Imagine"}; mode="r")
     s = stream(io)
     h = parse_header(s)
     filename = s.name[7:end-1]
