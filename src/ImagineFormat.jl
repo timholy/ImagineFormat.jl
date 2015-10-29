@@ -1,7 +1,7 @@
 module ImagineFormat
 
 using Images, FileIO
-using SIUnits, SIUnits.ShortUnits, Compat
+using SIUnits, SIUnits.ShortUnits
 using FileIO: skipmagic, stream, @format_str, Stream
 
 export imagine2nrrd, Micron
@@ -60,14 +60,13 @@ function FileIO.load(io::Stream{format"Imagine"}; mode="r+")
         dz = abs(pstart - pstop)/sz[3]
     else dz = 0.0 end
 
-    props = @compat Dict(
+    props = Dict(
         "spatialorder" => (havez ? ["x", "l", "z"] : ["x", "l"]),
         "colorspace" => "Gray",
         "pixelspacing" => (havez ? [um_per_pixel, um_per_pixel, dz] : [um_per_pixel, um_per_pixel]),
-        "limits" => (@compat(UInt16(0)), @compat(UInt16(2^h["original image depth"]-1))),
+        "limits" => (UInt16(0), UInt16(2^h["original image depth"]-1)),
         "imagineheader" => h,
-        "suppress" => Set(Any["imagineheader"])
-    )
+        "suppress" => Set(Any["imagineheader"]))
     if havet
         props["timedim"] = havez ? 4 : 3
     end
@@ -77,12 +76,12 @@ end
 abstract Endian
 type LittleEndian <: Endian; end
 type BigEndian <: Endian; end
-const endian_dict = @compat Dict("l"=>LittleEndian, "b"=>BigEndian)
-const nrrd_endian_dict = @compat Dict(LittleEndian=>"little",BigEndian=>"big")
+const endian_dict = Dict("l"=>LittleEndian, "b"=>BigEndian)
+const nrrd_endian_dict = Dict(LittleEndian=>"little",BigEndian=>"big")
 parse_endian(s::ASCIIString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
-    ss = @compat split(s, r"[ ,;]", keep=false)
+    ss = split(s, r"[ ,;]", keep=false)
     v = Array(Int, length(ss))
     for i = 1:length(ss)
         v[i] = parse(Int,ss[i])
@@ -90,7 +89,7 @@ function parse_vector_int(s::AbstractString)
     return v
 end
 
-const bitname_dict = @compat Dict(
+const bitname_dict = Dict(
   "int8"      => Int8,
   "uint8"     => UInt8,
   "int16"     => Int16,
@@ -123,7 +122,7 @@ function parse_quantity_or_empty(s::ASCIIString)
     end
 end
 
-_unit_string_dict = @compat Dict("um" => Micro*Meter, "s" => Second, "us" => Micro*Second, "MHz" => Mega*Hertz)
+_unit_string_dict = Dict("um" => Micro*Meter, "s" => Second, "us" => Micro*Second, "MHz" => Mega*Hertz)
 function parse_quantity(s::AbstractString, strict::Bool = true)
     # Find the last character of the numeric component
     m = match(r"[0-9\.\+-](?![0-9\.\+-])", s)
@@ -144,7 +143,7 @@ end
 
 # Read and parse a *.imagine file (an Imagine header file)
 const compound_fields = Any["piezo", "binning"]
-const field_key_dict = @compat Dict{AbstractString,Function}(
+const field_key_dict = Dict{AbstractString,Function}(
     "header version"               => x->parse(Float64,x),
     "app version"                  => identity,
     "date and time"                => identity,
