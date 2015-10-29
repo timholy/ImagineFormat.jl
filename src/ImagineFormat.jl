@@ -9,8 +9,9 @@ export imagine2nrrd, Micron
 Micron = SIUnits.NonSIUnit{typeof(Meter),:µm}()
 convert(::Type{SIUnits.SIQuantity},::typeof(Micron)) = Micro*Meter
 
-    open(f) do s
 function FileIO.load(f::File{format"Imagine"}; mode="r")
+    fabs = File(format"Imagine", abspath(f.filename))
+    open(fabs) do s
         skipmagic(s)
         load(s, mode=mode)
     end
