@@ -17,3 +17,25 @@ Read Imagine files like this:
 using Images
 img = load("filename")
 ```
+
+## Converting to NRRD
+
+You can write an NRRD header (`*.nhdr`) from an Imagine header as follows:
+```jl
+h = ImagineFormat.parse_header(filename)  # the .imagine file name
+imagine2nrrd(nrrdname, h, [datafilename])
+```
+where the optional `datafilename` is the name of the `*.cam` file.
+
+## Writing Imagine headers
+
+You can use the non-exported function `ImagineFormat.save_header`:
+
+```jl
+save_header(destname, srcname, img, [T])
+```
+
+`destname` is the output `*.imagine` file; `srcname` is the name of
+the "template" file.  Certain header values (e.g., size information)
+are updated by reference to `img`.  The optional argument `T` allows
+you to specify a different element type than possessed by `img`.

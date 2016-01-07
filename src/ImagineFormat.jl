@@ -4,14 +4,14 @@ module ImagineFormat
 
 using Images, FileIO
 using SIUnits, SIUnits.ShortUnits
-using FileIO: skipmagic, stream, @format_str, Stream
+# using FileIO: skipmagic, stream, @format_str, Stream
 
 export imagine2nrrd, Micron
 
 Micron = SIUnits.NonSIUnit{typeof(Meter),:µm}()
 convert(::Type{SIUnits.SIQuantity},::typeof(Micron)) = Micro*Meter
 
-function FileIO.load(f::File{format"Imagine"}; mode="r")
+function load(f::File{format"Imagine"}; mode="r")
     fabs = File(format"Imagine", abspath(f.filename))
     open(fabs) do s
         skipmagic(s)
@@ -19,7 +19,7 @@ function FileIO.load(f::File{format"Imagine"}; mode="r")
     end
 end
 
-function FileIO.load(io::Stream{format"Imagine"}; mode="r")
+function load(io::Stream{format"Imagine"}; mode="r")
     s = stream(io)
     h = parse_header(s)
     filename = s.name[7:end-1]
@@ -221,7 +221,7 @@ function parse_header(s::IOStream)
                     try
                         thisdict[k2] = func(v2)
                     catch err
-                        println("Error processing key ", k2, " with value ", v2)
+                        println("Error processing key '", k2, "' with value ", v2)
                         rethrow(err)
                     end
                 end
@@ -239,6 +239,16 @@ function parse_header(s::IOStream)
     end
     return headerdict
 end
+function parse_header(io::Stream{format"Imagine"})
+    skipmagic(io)
+    parse_header(stream(io))
+end
+function parse_header(f::File{format"Imagine"})
+    open(f) do io
+        parse_header(io)
+    end
+end
+parse_header(filename::AbstractString) = parse_header(query(filename))
 
 function imagine2nrrd(sheader::IO, h::Dict{ASCIIString, Any}, datafilename = nothing)
     println(sheader, "NRRD0001")
@@ -277,5 +287,97 @@ function imagine2nrrd(nrrdname::AbstractString, h::Dict{ASCIIString, Any}, dataf
     imagine2nrrd(sheader, h, datafilename)
     close(sheader)
 end
+
+"""
+`save_header(filename, header)` writes a header dictionary in Imagine format.
+
+`save_header(destname, srcname, img::AbstractArray, [T::Type =
+eltype(img)])` writes a `.imagine` file with name `destname`, using
+the `.imagine` file `srcname` as a template. Size and element type
+fields are updated from `img` and `T`, respectively.
+"""
+function save_header(filename::AbstractString, h::Dict{ASCIIString, Any})
+    open(filename, "w") do io
+        write(io, magic(format"Imagine"))
+        println(io, "\n[general]")
+        writekv(io, h, ("header version", "app version", "date and time", "byte order", "rig"))
+        println(io, "\n[misc params]")
+        writekv(io, h, ("stimulus file content", "comment", "ai data file","image data file", "piezo"))
+        println(io, "\n[ai]")
+        writekv(io, h, ("nscans", "channel list", "label list", "scan rate", "min sample", "max sample", "min input", "max input"))
+        println(io, "\n[camera]")
+        writekv(io, h, ("original image depth", "saved image depth", "image width", "image height", "number of frames requested", "nStacks", "idle time between stacks", "pre amp gain", "gain", "exposure time", "vertical shift speed", "vertical clock vol amp", "readout rate", "pixel order", "frame index offset", "frames per stack", "pixel data type", "camera", "um per pixel", "binning", "angle from horizontal (deg)"))
+    end
+    nothing
+end
+
+function save_header(dest::AbstractString, src::AbstractString, img::AbstractArray, T::Type = eltype(img))
+    h = parse_header(src)
+    fillsize!(h, img)
+    h["pixel data type"] = lowercase(string(T))
+    h["byte order"] = ENDIAN_BOM == 0x04030201 ? "l" : "b"
+    save_header(dest, h)
+end
+
+function fillsize!(h, img::AbstractImage)
+    h["image width"] = size(img,"x")
+    h["image height"] = size(img,"l")
+    h["frames per stack"] = size(img,"z")
+    h["nStacks"] = size(img,"t")
+    h
+end
+
+function fillsize!{T}(h, img::AbstractArray{T,4})
+    h["image width"] = size(img,1)
+    h["image height"] = size(img,2)
+    h["frames per stack"] = size(img,3)
+    h["nStacks"] = size(img,4)
+    h
+end
+
+function writekv(io, h, fieldnames)
+    for fn in fieldnames
+        if haskey(h, fn)
+            writefield(io, fn, h[fn])
+        end
+    end
+end
+writefield(io, fn, v) = println(io, fn, "=", v)
+function writefield(io, fn, v::Number)
+    print(io, fn, "=")
+    if haskey(write_dict, fn)
+        write_dict[fn](io, v)
+    else
+        println(io, isnan(v) ? "" : v)
+    end
+end
+writefield(io, fn, v::AbstractVector) = println(io, fn, "=", join(map(string,v)," "))
+
+function writefield(io, fn, dct::Dict)
+    print(io, fn, "=")
+    ks = collect(keys(dct))
+    vs = collect(values(dct))
+    for i = 1:length(ks)
+        k, v = ks[i], vs[i]
+        print(io, k, ':')
+        if haskey(write_dict, k)
+            write_dict[k](io, v)
+        else
+            print(io, v)
+        end
+        print(io, i == length(ks) ? '\n' : ';')
+    end
+end
+
+writeum(io,x) = print(io, round(Int, 10^6*(x/Meter)), " um")
+writeus(io,x) = print(io, round(Int, 10^6*(x/Second)), " us")
+writeMHz(io,x) = print(io, round(Int, 1e-6*(x*Second)), " MHz")
+const write_dict = Dict{ASCIIString,Function}(
+    "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
+    "start position"               => writeum,
+    "stop position"                => writeum,
+    "vertical shift speed"         => (io,x)->(writeus(io,x); print(io,'\n')),
+    "readout rate"                 => (io,x)->(writeMHz(io,x); print(io,'\n')),
+)
 
 end
