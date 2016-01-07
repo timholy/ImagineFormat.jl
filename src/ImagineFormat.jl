@@ -370,8 +370,10 @@ function writefield(io, fn, dct::Dict)
 end
 
 writeum(io,x) = print(io, round(Int, 10^6*(x/Meter)), " um")
-writeus(io,x) = print(io, round(Int, 10^6*(x/Second)), " us")
-writeMHz(io,x) = print(io, round(Int, 1e-6*(x*Second)), " MHz")
+writeus(io,x::SIUnits.SIQuantity) = print(io, round(Int, 10^6*(x/Second)), " us")
+writeus(io,x) = isnan(x) || print(io, round(Int, 10^6*(x/Second)), " us")
+writeMHz(io,x::SIUnits.SIQuantity) = print(io, round(Int, 1e-6*(x*Second)), " MHz")
+writeMHz(io,x) = isnan(x) || print(io, round(Int, 1e-6*(x*Second)), " MHz")
 const write_dict = Dict{ASCIIString,Function}(
     "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
