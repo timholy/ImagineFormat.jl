@@ -382,4 +382,8 @@ const write_dict = Dict{ASCIIString,Function}(
     "readout rate"                 => (io,x)->(writeMHz(io,x); print(io,'\n')),
 )
 
+function __init__()
+    Base.rehash!(nrrd_endian_dict)
+end
+
 end
