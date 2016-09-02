@@ -2,7 +2,7 @@ __precompile__()
 
 module ImagineFormat
 
-using Images, FileIO
+using Images, FileIO, Compat
 using SIUnits, SIUnits.ShortUnits
 # using FileIO: skipmagic, stream, @format_str, Stream
 
@@ -81,7 +81,7 @@ type LittleEndian <: Endian; end
 type BigEndian <: Endian; end
 const endian_dict = Dict("l"=>LittleEndian, "b"=>BigEndian)
 const nrrd_endian_dict = Dict(LittleEndian=>"little",BigEndian=>"big")
-parse_endian(s::ASCIIString) = endian_dict[lowercase(s)]
+parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
     ss = split(s, r"[ ,;]", keep=false)
@@ -107,9 +107,9 @@ const bitname_dict = Dict(
   "float64"   => Float64,
   "double"    => Float64)
 
-parse_bittypename(s::ASCIIString) = bitname_dict[lowercase(s)]
+parse_bittypename(s::AbstractString) = bitname_dict[lowercase(s)]
 
-function float64_or_empty(s::ASCIIString)
+function float64_or_empty(s::AbstractString)
     if isempty(s)
         return NaN
     else
@@ -117,7 +117,7 @@ function float64_or_empty(s::ASCIIString)
     end
 end
 
-function parse_quantity_or_empty(s::ASCIIString)
+function parse_quantity_or_empty(s::AbstractString)
     if isempty(s)
         return NaN
     else
@@ -197,7 +197,7 @@ const field_key_dict = Dict{AbstractString,Function}(
     "angle from horizontal (deg)"  => float64_or_empty)
 
 function parse_header(s::IOStream)
-    headerdict = Dict{ASCIIString, Any}()
+    headerdict = Dict{Compat.ASCIIString, Any}()
     for this_line = eachline(s)
         this_line = strip(this_line)
         if !isempty(this_line) && !ismatch(r"\[.*\]", this_line)
@@ -209,7 +209,7 @@ function parse_header(s::IOStream)
             k = this_line[1:m.offset-1]
             v = this_line[m.offset+1:end]
             if in(k, compound_fields)
-                thisdict = Dict{ASCIIString, Any}()
+                thisdict = Dict{Compat.ASCIIString, Any}()
                 # Split on semicolon
                 strs = split(v, r";")
                 for i = 1:length(strs)
@@ -250,7 +250,7 @@ function parse_header(f::File{format"Imagine"})
 end
 parse_header(filename::AbstractString) = parse_header(query(filename))
 
-function imagine2nrrd(sheader::IO, h::Dict{ASCIIString, Any}, datafilename = nothing)
+function imagine2nrrd(sheader::IO, h::Dict{Compat.ASCIIString, Any}, datafilename = nothing)
     println(sheader, "NRRD0001")
     T = h["pixel data type"]
     if T<:AbstractFloat
@@ -282,7 +282,7 @@ function imagine2nrrd(sheader::IO, h::Dict{ASCIIString, Any}, datafilename = not
     sheader
 end
 
-function imagine2nrrd(nrrdname::AbstractString, h::Dict{ASCIIString, Any}, datafilename = nothing)
+function imagine2nrrd(nrrdname::AbstractString, h::Dict{Compat.ASCIIString, Any}, datafilename = nothing)
     sheader = open(nrrdname, "w")
     imagine2nrrd(sheader, h, datafilename)
     close(sheader)
@@ -296,7 +296,7 @@ eltype(img)])` writes a `.imagine` file with name `destname`, using
 the `.imagine` file `srcname` as a template. Size and element type
 fields are updated from `img` and `T`, respectively.
 """
-function save_header(filename::AbstractString, h::Dict{ASCIIString, Any})
+function save_header(filename::AbstractString, h::Dict{Compat.ASCIIString, Any})
     open(filename, "w") do io
         write(io, magic(format"Imagine"))
         println(io, "\n[general]")
@@ -374,7 +374,7 @@ writeus(io,x::SIUnits.SIQuantity) = print(io, round(Int, 10^6*(x/Second)), " us"
 writeus(io,x) = isnan(x) || print(io, round(Int, 10^6*(x/Second)), " us")
 writeMHz(io,x::SIUnits.SIQuantity) = print(io, round(Int, 1e-6*(x*Second)), " MHz")
 writeMHz(io,x) = isnan(x) || print(io, round(Int, 1e-6*(x*Second)), " MHz")
-const write_dict = Dict{ASCIIString,Function}(
+const write_dict = Dict{Compat.ASCIIString,Function}(
     "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
     "stop position"                => writeum,
