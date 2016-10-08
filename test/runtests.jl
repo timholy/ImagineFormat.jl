@@ -8,7 +8,7 @@ img = load("test.imagine")
 @test pixelspacing(img)[1:2] == [0.71e-6Meter, 0.71e-6Meter]
 @test_approx_eq pixelspacing(img)[3].val (2/3)*1e-4
 
-bn = tempname()
+bn = joinpath(tempdir(), randstring())
 ifn = string(bn, ".imagine")
 cfn = string(bn, ".cam")
 A = rand(Float32,2,3,4,5)
