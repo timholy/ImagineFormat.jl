@@ -1,12 +1,14 @@
-using Images, SIUnits, Base.Test
+using Images, FixedPointNumbers, Unitful, Base.Test
 
+μm = u"μm"
 img = load("test.imagine")
+@test eltype(img) == N2f14
 @test ndims(img) == 4
 @test size(img) == (5,7,3,4)
 @test timedim(img) == 4
-@test spatialorder(img) == ["x", "l", "z"]
-@test pixelspacing(img)[1:2] == [0.71e-6Meter, 0.71e-6Meter]
-@test_approx_eq pixelspacing(img)[3].val (2/3)*1e-4
+@test axisnames(img) == (:x, :l, :z, :time)
+@test pixelspacing(img)[1:2] == (0.71μm, 0.71μm)
+@test pixelspacing(img)[3] ≈ (2/3)*100μm
 
 bn = joinpath(tempdir(), randstring())
 ifn = string(bn, ".imagine")
