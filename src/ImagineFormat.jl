@@ -2,14 +2,15 @@ __precompile__()
 
 module ImagineFormat
 
-using Images, FileIO, Compat
-using SIUnits, SIUnits.ShortUnits
-# using FileIO: skipmagic, stream, @format_str, Stream
+using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
+using Ranges   # TODO: eliminate with julia 0.6
 
-export imagine2nrrd, Micron
+export imagine2nrrd
 
-Micron = SIUnits.NonSIUnit{typeof(Meter),:µm}()
-convert(::Type{SIUnits.SIQuantity},::typeof(Micron)) = Micro*Meter
+const μm = u"μm"
+const s = u"s"
+const μs = u"μs"
+const MHz = u"MHz"
 
 function load(f::File{format"Imagine"}; mode="r")
     fabs = File(format"Imagine", abspath(f.filename))
@@ -25,7 +26,8 @@ function load(io::Stream{format"Imagine"}; mode="r")
     filename = s.name[7:end-1]
     basename, ext = splitext(filename)
     camfilename = basename*".cam"
-    T = h["pixel data type"]
+    Traw = h["pixel data type"]
+    T = Traw <: Unsigned ? Normed{Traw, h["original image depth"]} : Traw
     sz = [h["image width"], h["image height"], h["frames per stack"], h["nStacks"]]
     if sz[4] == 1
         sz = sz[1:3]
@@ -56,24 +58,22 @@ function load(io::Stream{format"Imagine"}; mode="r")
         end
         data = SharedArray(camfilename, T, tuple(sz...), mode=mode)
     end
-    um_per_pixel = h["um per pixel"]*µm
+    um_per_pixel = h["um per pixel"]*μm
     pstart = h["piezo"]["stop position"]
     pstop = h["piezo"]["start position"]
     if length(sz)>2
         dz = abs(pstart - pstop)/sz[3]
     else dz = 0.0 end
 
-    props = Dict(
-        "spatialorder" => (havez ? ["x", "l", "z"] : ["x", "l"]),
-        "colorspace" => "Gray",
-        "pixelspacing" => (havez ? [um_per_pixel, um_per_pixel, dz] : [um_per_pixel, um_per_pixel]),
-        "limits" => (UInt16(0), UInt16(2^h["original image depth"]-1)),
-        "imagineheader" => h,
-        "suppress" => Set(Any["imagineheader"]))
+    axisnames = havez ? (:x, :l, :z) : (:x, :l)
+    pixelspacing = havez ? (um_per_pixel, um_per_pixel, dz) : (um_per_pixel, um_per_pixel)
     if havet
-        props["timedim"] = havez ? 4 : 3
+        axisnames = (axisnames..., :time)
+        pixelspacing = (pixelspacing..., h["idle time between stacks"]+h["frames per stack"]*h["exposure time"])
     end
-    Image(data, props)
+#    ImageMeta(AxisArray(data, axisnames, pixelspacing), imagineheader=h, suppress=Set(Any["imagineheader"]))  # TODO: switch to this with julia 0.6.0
+    axs = map((n,s,l)->Axis{n}(Ranges.linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
+    ImageMeta(AxisArray(data, axs), imagineheader=h, suppress=Set(Any["imagineheader"]))
 end
 
 abstract Endian
@@ -125,7 +125,7 @@ function parse_quantity_or_empty(s::AbstractString)
     end
 end
 
-_unit_string_dict = Dict("um" => Micro*Meter, "s" => Second, "us" => Micro*Second, "MHz" => Mega*Hertz)
+_unit_string_dict = Dict("um" => μm, "s" => s, "us" => μs, "MHz" => MHz)
 function parse_quantity(s::AbstractString, strict::Bool = true)
     # Find the last character of the numeric component
     m = match(r"[0-9\.\+-](?![0-9\.\+-])", s)
@@ -197,7 +197,7 @@ const field_key_dict = Dict{AbstractString,Function}(
     "angle from horizontal (deg)"  => float64_or_empty)
 
 function parse_header(s::IOStream)
-    headerdict = Dict{Compat.ASCIIString, Any}()
+    headerdict = Dict{String, Any}()
     for this_line = eachline(s)
         this_line = strip(this_line)
         if !isempty(this_line) && !ismatch(r"\[.*\]", this_line)
@@ -209,7 +209,7 @@ function parse_header(s::IOStream)
             k = this_line[1:m.offset-1]
             v = this_line[m.offset+1:end]
             if in(k, compound_fields)
-                thisdict = Dict{Compat.ASCIIString, Any}()
+                thisdict = Dict{String, Any}()
                 # Split on semicolon
                 strs = split(v, r";")
                 for i = 1:length(strs)
@@ -250,7 +250,7 @@ function parse_header(f::File{format"Imagine"})
 end
 parse_header(filename::AbstractString) = parse_header(query(filename))
 
-function imagine2nrrd(sheader::IO, h::Dict{Compat.ASCIIString, Any}, datafilename = nothing)
+function imagine2nrrd(sheader::IO, h::Dict{String, Any}, datafilename = nothing)
     println(sheader, "NRRD0001")
     T = h["pixel data type"]
     if T<:AbstractFloat
@@ -282,7 +282,7 @@ function imagine2nrrd(sheader::IO, h::Dict{Compat.ASCIIString, Any}, datafilenam
     sheader
 end
 
-function imagine2nrrd(nrrdname::AbstractString, h::Dict{Compat.ASCIIString, Any}, datafilename = nothing)
+function imagine2nrrd(nrrdname::AbstractString, h::Dict{String, Any}, datafilename = nothing)
     sheader = open(nrrdname, "w")
     imagine2nrrd(sheader, h, datafilename)
     close(sheader)
@@ -296,7 +296,7 @@ eltype(img)])` writes a `.imagine` file with name `destname`, using
 the `.imagine` file `srcname` as a template. Size and element type
 fields are updated from `img` and `T`, respectively.
 """
-function save_header(filename::AbstractString, h::Dict{Compat.ASCIIString, Any})
+function save_header(filename::AbstractString, h::Dict{String, Any})
     open(filename, "w") do io
         write(io, magic(format"Imagine"))
         println(io, "\n[general]")
@@ -319,11 +319,11 @@ function save_header(dest::AbstractString, src::AbstractString, img::AbstractArr
     save_header(dest, h)
 end
 
-function fillsize!(h, img::AbstractImage)
-    h["image width"] = size(img,"x")
-    h["image height"] = size(img,"l")
-    h["frames per stack"] = size(img,"z")
-    h["nStacks"] = size(img,"t")
+function fillsize!(h, img::AxisArray)
+    h["image width"] = size(img, Axis{:x})
+    h["image height"] = size(img, Axis{:l})
+    h["frames per stack"] = size(img, Axis{:z})
+    h["nStacks"] = size(img, Axis{:time})
     h
 end
 
@@ -369,12 +369,10 @@ function writefield(io, fn, dct::Dict)
     end
 end
 
-writeum(io,x) = print(io, round(Int, 10^6*(x/Meter)), " um")
-writeus(io,x::SIUnits.SIQuantity) = print(io, round(Int, 10^6*(x/Second)), " us")
-writeus(io,x) = isnan(x) || print(io, round(Int, 10^6*(x/Second)), " us")
-writeMHz(io,x::SIUnits.SIQuantity) = print(io, round(Int, 1e-6*(x*Second)), " MHz")
-writeMHz(io,x) = isnan(x) || print(io, round(Int, 1e-6*(x*Second)), " MHz")
-const write_dict = Dict{Compat.ASCIIString,Function}(
+writeum(io,x) = print(io, round(Int, x/μm), " um")
+writeus(io,x) = print(io, round(Int, x/μs), " us")
+writeMHz(io,x) = print(io, round(Int, x/MHz), " MHz")
+const write_dict = Dict{String,Function}(
     "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
     "stop position"                => writeum,
