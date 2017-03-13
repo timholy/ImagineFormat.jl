@@ -62,7 +62,7 @@ function load(io::Stream{format"Imagine"}; mode="r")
     pstart = h["piezo"]["stop position"]
     pstop = h["piezo"]["start position"]
     if length(sz)>2
-        dz = abs(pstart - pstop)/sz[3]
+        dz = abs(pstart - pstop)/(sz[3]-1)
     else dz = 0.0 end
 
     axisnames = havez ? (:x, :l, :z) : (:x, :l)

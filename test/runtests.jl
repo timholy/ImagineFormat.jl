@@ -8,7 +8,7 @@ img = load("test.imagine")
 @test timedim(img) == 4
 @test axisnames(img) == (:x, :l, :z, :time)
 @test pixelspacing(img)[1:2] == (0.71μm, 0.71μm)
-@test pixelspacing(img)[3] ≈ (2/3)*100μm
+@test pixelspacing(img)[3] ≈ 100μm
 
 bn = joinpath(tempdir(), randstring())
 ifn = string(bn, ".imagine")
