@@ -29,3 +29,17 @@ io = IOBuffer()
 imagine2nrrd(io, img["imagineheader"])
 str = takebuf_string(io)
 @test str == "NRRD0001\ntype: uint16\ndimension: 4\nsizes: 5 7 3 4\nkinds: space space space time\nencoding: raw\nendian: little\n"
+
+# Optional fields
+MHz = u"MHz"
+μs = u"μs"
+@test img["imagineheader"]["readout rate"] == img2["imagineheader"]["readout rate"] == 35.0MHz
+@test img["imagineheader"]["vertical shift speed"] == img2["imagineheader"]["vertical shift speed"] == 1.9176μs
+
+h = ImagineFormat.parse_header("test_noshift.imagine")
+h["byte order"] = ENDIAN_BOM == 0x04030201 ? "l" : "b"
+ImagineFormat.save_header(ifn, h)
+h2 = ImagineFormat.parse_header(ifn)
+@test isnan(h["readout rate"]) && isnan(h2["readout rate"])
+@test isnan(h["vertical shift speed"]) && isnan(h2["vertical shift speed"])
+rm(ifn)

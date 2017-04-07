@@ -369,9 +369,13 @@ function writefield(io, fn, dct::Dict)
     end
 end
 
-writeum(io,x) = print(io, round(Int, x/μm), " um")
-writeus(io,x) = print(io, round(Int, x/μs), " us")
-writeMHz(io,x) = print(io, round(Int, x/MHz), " MHz")
+writeum(io,x) = print(io, x/μm, " um")
+writeus{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(1//1),)}}) =
+    print(io, x/μs, " us")
+writeus(io,x) = nothing
+writeMHz{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(-1//1),)}}) =
+    print(io, x/MHz, " MHz")
+writeMHz(io,x) = nothing
 const write_dict = Dict{String,Function}(
     "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
