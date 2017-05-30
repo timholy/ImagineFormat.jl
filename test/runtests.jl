@@ -27,7 +27,7 @@ rm(cfn)
 using ImagineFormat
 io = IOBuffer()
 imagine2nrrd(io, img["imagineheader"])
-str = takebuf_string(io)
+str = String(take!(io))
 @test str == "NRRD0001\ntype: uint16\ndimension: 4\nsizes: 5 7 3 4\nkinds: space space space time\nencoding: raw\nendian: little\n"
 
 # Optional fields

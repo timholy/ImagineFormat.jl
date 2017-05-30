@@ -3,7 +3,6 @@ __precompile__()
 module ImagineFormat
 
 using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
-using Ranges   # TODO: eliminate with julia 0.6
 
 export imagine2nrrd
 
@@ -40,7 +39,7 @@ function load(io::Stream{format"Imagine"}; mode="r")
     # Check that the file size is consistent with the expected size
     if !isfile(camfilename)
         warn("Cannot open ", camfilename)
-        data = Array(T, sz[1], sz[2], sz[3], 0)
+        data = Array{T}(sz[1], sz[2], sz[3], 0)
     else
         fsz = filesize(camfilename)
         n_stacks = sz[end]
@@ -56,7 +55,7 @@ function load(io::Stream{format"Imagine"}; mode="r")
             println("Truncating to ", n_stacks, length(sz) == 4 ? " stacks" : " frames")
             sz[end] = n_stacks
         end
-        data = SharedArray(camfilename, T, tuple(sz...), mode=mode)
+        data = SharedArray{T}(camfilename, tuple(sz...), mode=mode)
     end
     um_per_pixel = h["um per pixel"]*μm
     pstart = h["piezo"]["stop position"]
@@ -72,11 +71,11 @@ function load(io::Stream{format"Imagine"}; mode="r")
         pixelspacing = (pixelspacing..., h["idle time between stacks"]+h["frames per stack"]*h["exposure time"])
     end
 #    ImageMeta(AxisArray(data, axisnames, pixelspacing), imagineheader=h, suppress=Set(Any["imagineheader"]))  # TODO: switch to this with julia 0.6.0
-    axs = map((n,s,l)->Axis{n}(Ranges.linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
+    axs = map((n,s,l)->Axis{n}(linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
     ImageMeta(AxisArray(data, axs), imagineheader=h, suppress=Set(Any["imagineheader"]))
 end
 
-abstract Endian
+abstract type Endian end
 type LittleEndian <: Endian; end
 type BigEndian <: Endian; end
 const endian_dict = Dict("l"=>LittleEndian, "b"=>BigEndian)
@@ -85,7 +84,7 @@ parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
     ss = split(s, r"[ ,;]", keep=false)
-    v = Array(Int, length(ss))
+    v = Vector{Int}(length(ss))
     for i = 1:length(ss)
         v[i] = parse(Int,ss[i])
     end
