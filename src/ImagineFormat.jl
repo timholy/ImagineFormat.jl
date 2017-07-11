@@ -126,6 +126,9 @@ end
 
 _unit_string_dict = Dict("um" => μm, "s" => s, "us" => μs, "MHz" => MHz)
 function parse_quantity(s::AbstractString, strict::Bool = true)
+    if s == "NA"
+        return Float64(NaN)
+    end
     # Find the last character of the numeric component
     m = match(r"[0-9\.\+-](?![0-9\.\+-])", s)
     if m == nothing
