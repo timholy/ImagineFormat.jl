@@ -33,7 +33,7 @@ str = String(take!(io))
 # Optional fields
 MHz = u"MHz"
 μs = u"μs"
-@test img["imagineheader"]["readout rate"] == img2["imagineheader"]["readout rate"] == 35.0MHz
+@test isnan(img["imagineheader"]["readout rate"]) && isnan(img2["imagineheader"]["readout rate"]) #marked as NA in test.imagine
 @test img["imagineheader"]["vertical shift speed"] == img2["imagineheader"]["vertical shift speed"] == 1.9176μs
 
 h = ImagineFormat.parse_header("test_noshift.imagine")
