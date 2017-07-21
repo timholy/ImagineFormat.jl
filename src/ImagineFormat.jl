@@ -126,6 +126,9 @@ end
 
 _unit_string_dict = Dict("um" => μm, "s" => s, "us" => μs, "MHz" => MHz)
 function parse_quantity(s::AbstractString, strict::Bool = true)
+    if s == "NA"
+        return Float64(NaN)
+    end
     # Find the last character of the numeric component
     m = match(r"[0-9\.\+-](?![0-9\.\+-])", s)
     if m == nothing
@@ -155,14 +158,20 @@ const field_key_dict = Dict{AbstractString,Function}(
     "comment"                      => identity,
     "ai data file"                 => identity,
     "image data file"              => identity,
+    "di data file"                 => identity,
+    "command file"                 => identity,
     "start position"               => parse_quantity,
     "stop position"                => parse_quantity,
     "bidirection"                  => x->parse(Int,x) != 0,
     "output scan rate"             => x->parse_quantity(x, false),
     "nscans"                       => x->parse(Int,x),
+    "di nscans"                    => x->parse(Int,x),
     "channel list"                 => parse_vector_int,
+    "di channel list"              => parse_vector_int,
     "label list"                   => identity,
+    "di label list"                => identity,
     "scan rate"                    => x->parse_quantity(x, false),
+    "di scan rate"                 => x->parse_quantity(x, false),
     "min sample"                   => x->parse(Int,x),
     "max sample"                   => x->parse(Int,x),
     "min input"                    => x->parse(Float64,x),
