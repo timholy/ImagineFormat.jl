@@ -21,8 +21,6 @@ ImagineFormat.save_header(ifn, "test.imagine", A)
 img2 = load(ifn)
 @test eltype(img2) == Float32
 @test data(img2) == A
-rm(ifn)
-rm(cfn)
 
 using ImagineFormat
 io = IOBuffer()
@@ -43,3 +41,6 @@ h2 = ImagineFormat.parse_header(ifn)
 @test isnan(h["readout rate"]) && isnan(h2["readout rate"])
 @test isnan(h["vertical shift speed"]) && isnan(h2["vertical shift speed"])
 rm(ifn)
+img2 = 0
+gc(); gc(); gc()
+rm(cfn)
