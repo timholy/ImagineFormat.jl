@@ -9,6 +9,9 @@ img = load("test.imagine")
 @test axisnames(img) == (:x, :l, :z, :time)
 @test pixelspacing(img)[1:2] == (0.71μm, 0.71μm)
 @test pixelspacing(img)[3] ≈ 100μm
+@test img.properties["imagineheader"]["bidirectional"] == false
+imgb = load("test_bidi.imagine")
+@test imgb.properties["imagineheader"]["bidirectional"] == true
 
 bn = joinpath(tempdir(), randstring())
 ifn = string(bn, ".imagine")
@@ -44,3 +47,23 @@ rm(ifn)
 img2 = 0
 gc(); gc(); gc()
 rm(cfn)
+
+#test BidiImageArrays
+A = ones(2,2,4,5)
+zsize = size(A,3)
+for t = 1:size(A,4)
+    for z = 1:zsize
+        if isodd(t)
+            A[:,:,z,t] = z
+        else
+            A[:,:,z,t] = zsize-z+1
+        end
+    end
+end
+
+B = BidiImageArray(A)
+for z = 1:zsize
+    @test all(B[:,:,z,:].==z) #getindex
+    B[:,:,z,:] = zsize-z+1 #setindex!
+    @test all(B[:,:,z,:].==zsize-z+1)
+end

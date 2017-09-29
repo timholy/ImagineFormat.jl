@@ -4,7 +4,7 @@ module ImagineFormat
 
 using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
 
-export imagine2nrrd
+export imagine2nrrd, BidiImageArray
 
 include("bidi.jl")
 
