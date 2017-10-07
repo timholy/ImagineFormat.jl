@@ -67,3 +67,9 @@ for z = 1:zsize
     B[:,:,z,:] = zsize-z+1 #setindex!
     @test all(B[:,:,z,:].==zsize-z+1)
 end
+A_copy = copy(A)
+B[1,1,1,2] = -1.0
+@test B[1,1,1,2] == -1.0
+@test A[1,1,4,2] == -1.0
+@test all(A[:,:,1:4,[1;3;4;5]] .== A_copy[:,:,1:4,[1;3;4;5]]) #make sure we only changed one index
+

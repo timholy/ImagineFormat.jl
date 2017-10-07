@@ -12,20 +12,14 @@ size(B::BidiImageArray) = size(B.A)
 
 Base.IndexStyle(::Type{<:BidiImageArray}) = IndexCartesian()
 
-function getindex(B::BidiImageArray{T}, I::Vararg{Int, 4}) where {T}
+function getindex(B::BidiImageArray, I::Vararg{Int, 4})
     t_ind = I[4]
-    if isodd(t_ind)
-        return getindex(B.A, I...)
-    else
-        return getindex(B.A, I[1], I[2], B.z_size - I[3] + 1, t_ind)
-    end
+    z_ind = ifelse(isodd(t_ind), I[3], B.z_size-I[3]+1)
+    return getindex(B.A, I[1], I[2], z_ind, t_ind)
 end
 
-function setindex!(B::BidiImageArray{T}, v, I::Vararg{Int, 4}) where {T}
+function setindex!(B::BidiImageArray, v, I::Vararg{Int, 4})
     t_ind = I[4]
-    if isodd(t_ind)
-        return setindex!(B.A, v, I...)
-    else
-        return setindex!(B.A, v, I[1], I[2], B.z_size - I[3] + 1, I[4])
-    end
+    z_ind = ifelse(isodd(t_ind), I[3], B.z_size-I[3]+1)
+    setindex!(B.A, v, I[1], I[2], z_ind, t_ind)
 end

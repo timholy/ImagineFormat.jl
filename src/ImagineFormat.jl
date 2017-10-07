@@ -73,7 +73,7 @@ function load(io::Stream{format"Imagine"}; mode="r")
         pixelspacing = (pixelspacing..., h["idle time between stacks"]+h["frames per stack"]*h["exposure time"])
     end
     axs = map((n,s,l)->Axis{n}(linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
-    is_bidi = h["bidirectional"]
+    is_bidi = get(h, "bidirectional", false) || get(h, "bidirection", false)
     if is_bidi
         if !havez
             warn("Image was marked as bidirectional but has no z axis.  Ignoring bidirectional tag")
@@ -406,7 +406,7 @@ writeMHz{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(-1//1
     print(io, x/MHz, " MHz")
 writeMHz(io,x) = nothing
 const write_dict = Dict{String,Function}(
-    "bidirectional"                  => (io,x)->x ? print(io, 1) : print(io, 0),
+    "bidirectional"                => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
     "stop position"                => writeum,
     "vertical shift speed"         => (io,x)->(writeus(io,x); print(io,'\n')),
