@@ -4,7 +4,9 @@ module ImagineFormat
 
 using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
 
-export imagine2nrrd
+export imagine2nrrd, BidiImageArray
+
+include("bidi.jl")
 
 const μm = u"μm"
 const s = u"s"
@@ -70,9 +72,18 @@ function load(io::Stream{format"Imagine"}; mode="r")
         axisnames = (axisnames..., :time)
         pixelspacing = (pixelspacing..., h["idle time between stacks"]+h["frames per stack"]*h["exposure time"])
     end
-#    ImageMeta(AxisArray(data, axisnames, pixelspacing), imagineheader=h, suppress=Set(Any["imagineheader"]))  # TODO: switch to this with julia 0.6.0
     axs = map((n,s,l)->Axis{n}(linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
-    ImageMeta(AxisArray(data, axs), imagineheader=h, suppress=Set(Any["imagineheader"]))
+    is_bidi = get(h, "bidirectional", false) || get(h, "bidirection", false)
+    if is_bidi
+        if !havez
+            warn("Image was marked as bidirectional but has no z axis.  Ignoring bidirectional tag")
+        elseif !havet
+            warn("Image was marked as bidirectional but is not a timeseries.  Ignoring bidirectional tag")
+        else
+            data = BidiImageArray(data)
+        end
+    end
+    ImageMeta(AxisArray(data, axisnames, pixelspacing), imagineheader=h, suppress=Set(Any["imagineheader"]))
 end
 
 abstract type Endian end
@@ -162,7 +173,17 @@ const field_key_dict = Dict{AbstractString,Function}(
     "command file"                 => identity,
     "start position"               => parse_quantity,
     "stop position"                => parse_quantity,
-    "bidirection"                  => x->parse(Int,x) != 0,
+    "bidirectional"                => x->parse(Int,x) != 0,
+    "405nm on"                     => x->parse(Int,x) != 0,
+    "445nm on"                     => x->parse(Int,x) != 0,
+    "488nm on"                     => x->parse(Int,x) != 0,
+    "514nm on"                     => x->parse(Int,x) != 0,
+    "561nm on"                     => x->parse(Int,x) != 0,
+    "405nm percent intensity"      => x->parse(Float64,x),
+    "445nm percent intensity"      => x->parse(Float64,x),
+    "488nm percent intensity"      => x->parse(Float64,x),
+    "514nm percent intensity"      => x->parse(Float64,x),
+    "561nm percent intensity"      => x->parse(Float64,x),
     "output scan rate"             => x->parse_quantity(x, false),
     "nscans"                       => x->parse(Int,x),
     "di nscans"                    => x->parse(Int,x),
@@ -314,7 +335,7 @@ function save_header(filename::AbstractString, h::Dict{String, Any})
         println(io, "\n[ai]")
         writekv(io, h, ("nscans", "channel list", "label list", "scan rate", "min sample", "max sample", "min input", "max input"))
         println(io, "\n[camera]")
-        writekv(io, h, ("original image depth", "saved image depth", "image width", "image height", "number of frames requested", "nStacks", "idle time between stacks", "pre amp gain", "gain", "exposure time", "vertical shift speed", "vertical clock vol amp", "readout rate", "pixel order", "frame index offset", "frames per stack", "pixel data type", "camera", "um per pixel", "binning", "angle from horizontal (deg)"))
+        writekv(io, h, ("original image depth", "saved image depth", "image width", "image height", "number of frames requested", "nStacks", "idle time between stacks", "pre amp gain", "gain", "exposure time", "vertical shift speed", "vertical clock vol amp", "readout rate", "pixel order", "frame index offset", "frames per stack", "pixel data type", "camera", "um per pixel", "binning", "angle from horizontal (deg)", "bidirectional"))
     end
     nothing
 end
@@ -385,7 +406,7 @@ writeMHz{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(-1//1
     print(io, x/MHz, " MHz")
 writeMHz(io,x) = nothing
 const write_dict = Dict{String,Function}(
-    "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
+    "bidirectional"                => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
     "stop position"                => writeum,
     "vertical shift speed"         => (io,x)->(writeus(io,x); print(io,'\n')),

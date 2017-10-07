@@ -52,4 +52,4 @@ pixel data type=uint16
 camera=DV8285_BV
 um per pixel=0.71
 binning=hbin:1;vbin:1;hstart:1;hend:1004;vstart:1;vend:1002
-bidirectional=0
+bidirectional=1
