@@ -87,8 +87,8 @@ function load(io::Stream{format"Imagine"}; mode="r")
 end
 
 abstract type Endian end
-type LittleEndian <: Endian; end
-type BigEndian <: Endian; end
+mutable struct LittleEndian <: Endian; end
+mutable struct BigEndian <: Endian; end
 const endian_dict = Dict("l"=>LittleEndian, "b"=>BigEndian)
 const nrrd_endian_dict = Dict(LittleEndian=>"little",BigEndian=>"big")
 parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
@@ -357,7 +357,7 @@ function fillsize!(h, img::AxisArray)
     h
 end
 
-function fillsize!{T}(h, img::AbstractArray{T,4})
+function fillsize!(h, img::AbstractArray{T,4}) where T
     h["image width"] = size(img,1)
     h["image height"] = size(img,2)
     h["frames per stack"] = size(img,3)
@@ -400,10 +400,10 @@ function writefield(io, fn, dct::Dict)
 end
 
 writeum(io,x) = print(io, x/μm, " um")
-writeus{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(1//1),)}}) =
+writeus(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(1//1),)}}) where {T} =
     print(io, x/μs, " us")
 writeus(io,x) = nothing
-writeMHz{T}(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(-1//1),)}}) =
+writeMHz(io,x::Quantity{T, Unitful.Dimensions{(Unitful.Dimension{:Time}(-1//1),)}}) where {T} =
     print(io, x/MHz, " MHz")
 writeMHz(io,x) = nothing
 const write_dict = Dict{String,Function}(
