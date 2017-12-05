@@ -173,6 +173,7 @@ const field_key_dict = Dict{AbstractString,Function}(
     "command file"                 => identity,
     "start position"               => parse_quantity,
     "stop position"                => parse_quantity,
+    "bidirection"                  => x->parse(Int,x) != 0,
     "bidirectional"                => x->parse(Int,x) != 0,
     "405nm on"                     => x->parse(Int,x) != 0,
     "445nm on"                     => x->parse(Int,x) != 0,
