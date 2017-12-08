@@ -227,7 +227,7 @@ const field_key_dict = Dict{AbstractString,Function}(
     "angle from horizontal (deg)"  => float64_or_empty,
     "x translation in pixels"      => x->parse(Int,x) != 0,
     "y translation in pixels"      => x->parse(Int,x) != 0,
-    "rotation angle in degree"     => x->parse(Int,x) != 0)
+    "rotation angle in degree"     => x->parse(Float64,x) != 0)
  
 
 function parse_header(s::IOStream)
