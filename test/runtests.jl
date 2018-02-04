@@ -73,3 +73,10 @@ B[1,1,1,2] = -1.0
 @test A[1,1,4,2] == -1.0
 @test all(A[:,:,1:4,[1;3;4;5]] .== A_copy[:,:,1:4,[1;3;4;5]]) #make sure we only changed one index
 
+img = load("no_z.imagine")
+@test eltype(img) == N2f14
+@test ndims(img) == 3
+@test size(img) == (6,5,2)
+@test timedim(img) == 3
+@test axisnames(img) == (:x, :l, :time)
+@test pixelspacing(img) == (-1μm, -1μm)
