@@ -29,15 +29,12 @@ function load(io::Stream{format"Imagine"}; mode="r")
     camfilename = basename*".cam"
     Traw = h["pixel data type"]
     T = Traw <: Unsigned ? Normed{Traw, h["original image depth"]} : Traw
-    sz = [h["image width"], h["image height"], h["frames per stack"], h["nStacks"]]
-    if sz[4] == 1
-        sz = sz[1:3]
-        if sz[3] == 1
-            sz = sz[1:2]
-        end
-    end
     havez = h["frames per stack"] > 1
     havet = h["nStacks"] > 1
+    sz = havez & havet ? [h["image width"], h["image height"], h["frames per stack"], h["nStacks"]] :
+         havez ? [h["image width"], h["image height"], h["frames per stack"]] :
+         havet ? [h["image width"], h["image height"], h["nStacks"]] :
+         [h["image width"], h["image height"]]
     # Check that the file size is consistent with the expected size
     if !isfile(camfilename)
         warn("Cannot open ", camfilename)
@@ -228,7 +225,7 @@ const field_key_dict = Dict{AbstractString,Function}(
     "x translation in pixels"      => x->parse(Int,x) != 0,
     "y translation in pixels"      => x->parse(Int,x) != 0,
     "rotation angle in degree"     => x->parse(Float64,x) != 0)
- 
+
 
 function parse_header(s::IOStream)
     headerdict = Dict{String, Any}()
