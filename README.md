@@ -23,9 +23,9 @@ img = load("filename")
 You can write an NRRD header (`*.nhdr`) from an Imagine header as follows:
 ```jl
 h = ImagineFormat.parse_header(filename)  # the .imagine file name
-imagine2nrrd(nrrdname, h, [datafilename])
+imagine2nrrd(nrrdname, h, datafilename)
 ```
-where the optional `datafilename` is the name of the `*.cam` file.
+where `datafilename` is the name of the `*.cam` file. It is required by the `*.nhdr` file to point to the actual data.
 
 ## Writing Imagine headers
 
