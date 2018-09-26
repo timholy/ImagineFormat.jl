@@ -1,4 +1,5 @@
-using Images, FixedPointNumbers, Unitful, Base.Test
+using Images, FixedPointNumbers, Unitful, Test, Random
+import ImagineFormat
 
 μm = u"μm"
 img = load("test.imagine")
@@ -45,7 +46,7 @@ h2 = ImagineFormat.parse_header(ifn)
 @test isnan(h["vertical shift speed"]) && isnan(h2["vertical shift speed"])
 rm(ifn)
 img2 = 0
-gc(); gc(); gc()
+GC.gc(); GC.gc(); GC.gc()
 rm(cfn)
 
 #test BidiImageArrays
@@ -54,9 +55,9 @@ zsize = size(A,3)
 for t = 1:size(A,4)
     for z = 1:zsize
         if isodd(t)
-            A[:,:,z,t] = z
+            A[:,:,z,t] .= z
         else
-            A[:,:,z,t] = zsize-z+1
+            A[:,:,z,t] .= zsize-z+1
         end
     end
 end
@@ -64,7 +65,7 @@ end
 B = BidiImageArray(A)
 for z = 1:zsize
     @test all(B[:,:,z,:].==z) #getindex
-    B[:,:,z,:] = zsize-z+1 #setindex!
+    B[:,:,z,:] .= zsize-z+1 #setindex!
     @test all(B[:,:,z,:].==zsize-z+1)
 end
 A_copy = copy(A)
