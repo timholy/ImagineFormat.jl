@@ -1,5 +1,3 @@
-__precompile__()
-
 module ImagineFormat
 
 using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
@@ -43,11 +41,11 @@ function load(io::Stream{format"Imagine"}; mode="r")
         fsz = filesize(camfilename)
         n_stacks = sz[end]
         if fsz != sizeof(T)*prod(map(Int64,sz))  # guard against overflow on 32bit
-            warn("Size of image file is different from expected value")
+            @warn("Size of image file is different from expected value")
             n_stacks = ifloor(fsz / sizeof(T) / prod(sz[1:end-1]))
         end
         if sizeof(T)*prod(map(Int64,sz[1:end-1]))*n_stacks > typemax(UInt)
-            warn("File size is too big to mmap on 32bit")
+            @warn("File size is too big to mmap on 32bit")
             n_stacks = ifloor(fsz / sizeof(T) / typemax(UInt))
         end
         if n_stacks < sz[end]
@@ -69,13 +67,13 @@ function load(io::Stream{format"Imagine"}; mode="r")
         axisnames = (axisnames..., :time)
         pixelspacing = (pixelspacing..., h["idle time between stacks"]+h["frames per stack"]*h["exposure time"])
     end
-    axs = map((n,s,l)->Axis{n}(linspace(0*s, (l-1)*s, l)), axisnames, pixelspacing, size(data))
+    axs = map((n,s,l)->Axis{n}(range(0*s, stop=(l-1)*s, length=l)), axisnames, pixelspacing, size(data))
     is_bidi = get(h, "bidirectional", false) || get(h, "bidirection", false)
     if is_bidi
         if !havez
-            warn("Image was marked as bidirectional but has no z axis.  Ignoring bidirectional tag")
+            @warn("Image was marked as bidirectional but has no z axis.  Ignoring bidirectional tag")
         elseif !havet
-            warn("Image was marked as bidirectional but is not a timeseries.  Ignoring bidirectional tag")
+            @warn("Image was marked as bidirectional but is not a timeseries.  Ignoring bidirectional tag")
         else
             data = BidiImageArray(data)
         end
@@ -91,7 +89,7 @@ const nrrd_endian_dict = Dict(LittleEndian=>"little",BigEndian=>"big")
 parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
-    ss = split(s, r"[ ,;]", keep=false)
+    ss = split(s, r"[ ,;]", keepempty=false)
     v = Vector{Int}(length(ss))
     for i = 1:length(ss)
         v[i] = parse(Int,ss[i])
@@ -231,7 +229,7 @@ function parse_header(s::IOStream)
     headerdict = Dict{String, Any}()
     for this_line = eachline(s)
         this_line = strip(this_line)
-        if !isempty(this_line) && !ismatch(r"\[.*\]", this_line)
+        if !isempty(this_line) && !occursin(r"\[.*\]", this_line)
             # Split on =
             m = match(r"=", this_line)
             if m.offset < 2

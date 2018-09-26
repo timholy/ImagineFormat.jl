@@ -1,4 +1,4 @@
-using Images, FixedPointNumbers, Unitful, Base.Test
+using Images, FixedPointNumbers, Unitful, Test
 
 μm = u"μm"
 img = load("test.imagine")
