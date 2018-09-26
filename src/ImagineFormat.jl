@@ -1,6 +1,6 @@
 module ImagineFormat
 
-using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers
+using AxisArrays, ImageMetadata, FileIO, Unitful, FixedPointNumbers, SharedArrays
 
 export imagine2nrrd, BidiImageArray
 
@@ -36,7 +36,7 @@ function load(io::Stream{format"Imagine"}; mode="r")
     # Check that the file size is consistent with the expected size
     if !isfile(camfilename)
         warn("Cannot open ", camfilename)
-        data = Array{T}(sz[1], sz[2], sz[3], 0)
+        data = Array{T}(undef, sz[1], sz[2], sz[3], 0)
     else
         fsz = filesize(camfilename)
         n_stacks = sz[end]
@@ -90,7 +90,7 @@ parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
     ss = split(s, r"[ ,;]", keepempty=false)
-    v = Vector{Int}(length(ss))
+    v = Vector{Int}(undef, length(ss))
     for i = 1:length(ss)
         v[i] = parse(Int,ss[i])
     end
