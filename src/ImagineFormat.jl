@@ -35,18 +35,18 @@ function load(io::Stream{format"Imagine"}; mode="r")
          [h["image width"], h["image height"]]
     # Check that the file size is consistent with the expected size
     if !isfile(camfilename)
-        warn("Cannot open ", camfilename)
+        @warn("Cannot open ", camfilename)
         data = Array{T}(undef, sz[1], sz[2], sz[3], 0)
     else
         fsz = filesize(camfilename)
         n_stacks = sz[end]
         if fsz != sizeof(T)*prod(map(Int64,sz))  # guard against overflow on 32bit
             @warn("Size of image file is different from expected value")
-            n_stacks = ifloor(fsz / sizeof(T) / prod(sz[1:end-1]))
+            n_stacks = floor(Int, fsz / sizeof(T) / prod(sz[1:end-1]))
         end
         if sizeof(T)*prod(map(Int64,sz[1:end-1]))*n_stacks > typemax(UInt)
             @warn("File size is too big to mmap on 32bit")
-            n_stacks = ifloor(fsz / sizeof(T) / typemax(UInt))
+            n_stacks = floor(Int, fsz / sizeof(T) / typemax(UInt))
         end
         if n_stacks < sz[end]
             println("Truncating to ", n_stacks, length(sz) == 4 ? " stacks" : " frames")
