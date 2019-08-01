@@ -81,3 +81,10 @@ img = load("no_z.imagine")
 @test timedim(img) == 3
 @test axisnames(img) == (:x, :l, :time)
 @test pixelspacing(img) == (-1μm, -1μm)
+
+# Fix deprecations in loading imagine-cam file incompatibility
+img = load("test_nocam.imagine")
+@test isempty(img)
+
+img = load("test_wrong_nstack.imagine")
+@test nimages(img) == 4
