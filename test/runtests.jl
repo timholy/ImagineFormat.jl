@@ -40,10 +40,12 @@ MHz = u"MHz"
 
 h = ImagineFormat.parse_header("test_noshift.imagine")
 h["byte order"] = ENDIAN_BOM == 0x04030201 ? "l" : "b"
-ImagineFormat.save_header(ifn, h)
+h["extra stuff"] = "Tuesday"
+ImagineFormat.save_header(ifn, h; misc=("extra stuff",))
 h2 = ImagineFormat.parse_header(ifn)
 @test isnan(h["readout rate"]) && isnan(h2["readout rate"])
 @test isnan(h["vertical shift speed"]) && isnan(h2["vertical shift speed"])
+@test h2["extra stuff"] == "Tuesday"
 rm(ifn)
 img2 = 0
 GC.gc(); GC.gc(); GC.gc()
@@ -83,6 +85,7 @@ img = load("no_z.imagine")
 @test pixelspacing(img) == (-1μm, -1μm)
 
 # Fix deprecations in loading imagine-cam file incompatibility
+@info "Two warnings are expected"
 img = load("test_nocam.imagine")
 @test isempty(img)
 

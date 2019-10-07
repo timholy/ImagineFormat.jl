@@ -256,7 +256,7 @@ function parse_header(s::IOStream)
                 end
                 headerdict[k] = thisdict
             else
-                func = field_key_dict[k]
+                func = get(field_key_dict, k, identity)
                 try
                     headerdict[k] = func(v)
                 catch err
@@ -318,34 +318,56 @@ function imagine2nrrd(nrrdname::AbstractString, h::Dict{String, Any}, datafilena
 end
 
 """
-`save_header(filename, header)` writes a header dictionary in Imagine format.
+    save_header(filename, header; section=())
 
-`save_header(destname, srcname, img::AbstractArray, [T::Type =
-eltype(img)])` writes a `.imagine` file with name `destname`, using
-the `.imagine` file `srcname` as a template. Size and element type
-fields are updated from `img` and `T`, respectively.
+Write a `header` dictionary in Imagine format.
+`section` can be one of `general`, `misc`, `ai`, or `camera`, to write additional entries
+in the specified section. For example,
+
+    header["stimulus info"] = "here is some info"
+    Imagine.save_header(filename, header; misc=("stimulus info",))
+
+would allow one to insert "stimulus info" into the "[misc params]" section of the `.imagine`
+file.
 """
-function save_header(filename::AbstractString, h::Dict{String, Any})
+function save_header(filename::AbstractString, h::Dict{String};
+                     general=(),
+                     misc=(),
+                     ai=(),
+                     camera=())
     open(filename, "w") do io
         write(io, magic(format"Imagine"))
         println(io, "\n[general]")
-        writekv(io, h, ("header version", "app version", "date and time", "byte order", "rig"))
+        writekv(io, h, ("header version", "app version", "date and time", "byte order", "rig", general...))
         println(io, "\n[misc params]")
-        writekv(io, h, ("stimulus file content", "comment", "ai data file","image data file", "piezo"))
+        writekv(io, h, ("stimulus file content", "comment", "ai data file","image data file", "piezo", misc...))
         println(io, "\n[ai]")
-        writekv(io, h, ("nscans", "channel list", "label list", "scan rate", "min sample", "max sample", "min input", "max input"))
+        writekv(io, h, ("nscans", "channel list", "label list", "scan rate", "min sample", "max sample", "min input", "max input", ai...))
         println(io, "\n[camera]")
-        writekv(io, h, ("original image depth", "saved image depth", "image width", "image height", "number of frames requested", "nStacks", "idle time between stacks", "pre amp gain", "gain", "exposure time", "vertical shift speed", "vertical clock vol amp", "readout rate", "pixel order", "frame index offset", "frames per stack", "pixel data type", "camera", "um per pixel", "binning", "angle from horizontal (deg)", "bidirectional"))
+        writekv(io, h, ("original image depth", "saved image depth", "image width",
+                        "image height", "number of frames requested", "nStacks",
+                        "idle time between stacks", "pre amp gain", "gain", "exposure time",
+                        "vertical shift speed", "vertical clock vol amp", "readout rate",
+                        "pixel order", "frame index offset", "frames per stack",
+                        "pixel data type", "camera", "um per pixel", "binning",
+                        "angle from horizontal (deg)", "bidirectional", camera...))
     end
     nothing
 end
 
-function save_header(dest::AbstractString, src::AbstractString, img::AbstractArray, T::Type = eltype(img))
+"""
+    save_header(destname, srcname, img::AbstractArray, [T::Type = eltype(img)])
+
+Write an `.imagine` file with name `destname`, using
+the `.imagine` file `srcname` as a template. Size and element type
+fields are updated from `img` and `T`, respectively.
+"""
+function save_header(dest::AbstractString, src::AbstractString, img::AbstractArray, T::Type = eltype(img); kwargs...)
     h = parse_header(src)
     fillsize!(h, img)
     h["pixel data type"] = lowercase(string(T))
     h["byte order"] = ENDIAN_BOM == 0x04030201 ? "l" : "b"
-    save_header(dest, h)
+    save_header(dest, h; kwargs...)
 end
 
 function fillsize!(h, img::AxisArray)
