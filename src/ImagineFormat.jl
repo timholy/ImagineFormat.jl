@@ -82,10 +82,10 @@ function load(io::Stream{format"Imagine"}; mode="r")
 end
 
 abstract type Endian end
-mutable struct LittleEndian <: Endian; end
-mutable struct BigEndian <: Endian; end
-const endian_dict = Dict("l"=>LittleEndian, "b"=>BigEndian)
-const nrrd_endian_dict = Dict(LittleEndian=>"little",BigEndian=>"big")
+struct LittleEndian <: Endian; end
+struct BigEndian <: Endian; end
+const endian_dict = Dict("l"=>LittleEndian(), "b"=>BigEndian())
+const nrrd_endian_dict = Dict(LittleEndian()=>"little",BigEndian()=>"big")
 parse_endian(s::AbstractString) = endian_dict[lowercase(s)]
 
 function parse_vector_int(s::AbstractString)
@@ -420,11 +420,15 @@ function writefield(io, fn, dct::Dict)
     end
 end
 
+writefield(io, fn, ::LittleEndian) = println(io, "byte order=l")
+writefield(io, fn, ::BigEndian)    = println(io, "byte order=b")
+
 writeum(io,x) = print(io, x/μm, " um")
 writeus(io,x::Unitful.Time) = print(io, x/μs, " us")
 writeus(io,x) = nothing
 writeMHz(io,x::Unitful.Frequency) = print(io, x/MHz, " MHz")
 writeMHz(io,x) = nothing
+
 const write_dict = Dict{String,Function}(
     "bidirectional"                => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
@@ -432,9 +436,5 @@ const write_dict = Dict{String,Function}(
     "vertical shift speed"         => (io,x)->(writeus(io,x); print(io,'\n')),
     "readout rate"                 => (io,x)->(writeMHz(io,x); print(io,'\n')),
 )
-
-function __init__()
-    Base.rehash!(nrrd_endian_dict)
-end
 
 end
