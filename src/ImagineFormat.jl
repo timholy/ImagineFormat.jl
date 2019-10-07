@@ -222,7 +222,12 @@ const field_key_dict = Dict{AbstractString,Function}(
     "angle from horizontal (deg)"  => float64_or_empty,
     "x translation in pixels"      => x->parse(Int,x) != 0,
     "y translation in pixels"      => x->parse(Int,x) != 0,
-    "rotation angle in degree"     => x->parse(Float64,x) != 0)
+    "rotation angle in degree"     => x->parse(Float64,x) != 0,
+    "stimulus scan hi"             => parse_vector_int,
+    "stimulus scan lo"             => parse_vector_int,
+    "stimulus frame hi"            => parse_vector_int,
+    "stimulus frame lo"            => parse_vector_int,
+    "stimulus sequence"            => identity)
 
 
 function parse_header(s::IOStream)
