@@ -436,6 +436,7 @@ writeMHz(io,x) = nothing
 
 const write_dict = Dict{String,Function}(
     "bidirectional"                => (io,x)->x ? print(io, 1) : print(io, 0),
+    "bidirection"                  => (io,x)->x ? print(io, 1) : print(io, 0),
     "start position"               => writeum,
     "stop position"                => writeum,
     "vertical shift speed"         => (io,x)->(writeus(io,x); print(io,'\n')),
