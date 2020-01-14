@@ -2,6 +2,11 @@
 
 [![Build Status](https://travis-ci.org/timholy/ImagineFormat.jl.svg?branch=master)](https://travis-ci.org/timholy/ImagineFormat.jl)
 
+[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/I/ImagineFormat.svg
+[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html
+
+[![PkgEval][pkgeval-img]][pkgeval-url]
+
 Imagine is an acquisition program for light sheet microscopy written
 by Zhongsheng Guo in Tim Holy's lab. This package implements a loader
 for the file format for the Julia programming language. Each Imagine
