@@ -10,9 +10,9 @@ img = load("test.imagine")
 @test axisnames(img) == (:x, :l, :z, :time)
 @test pixelspacing(img)[1:2] == (0.71μm, 0.71μm)
 @test pixelspacing(img)[3] ≈ 100μm
-@test img.properties["imagineheader"]["bidirectional"] == false
+@test img.imagineheader["bidirectional"] == false
 imgb = load("test_bidi.imagine")
-@test imgb.properties["imagineheader"]["bidirectional"] == true
+@test imgb.imagineheader["bidirectional"] == true
 
 bn = joinpath(tempdir(), randstring())
 ifn = string(bn, ".imagine")
@@ -24,19 +24,19 @@ end
 ImagineFormat.save_header(ifn, "test.imagine", A)
 img2 = load(ifn)
 @test eltype(img2) == Float32
-@test data(img2) == A
+@test arraydata(img2) == A
 
 using ImagineFormat
 io = IOBuffer()
-imagine2nrrd(io, img["imagineheader"])
+imagine2nrrd(io, img.imagineheader)
 str = String(take!(io))
 @test str == "NRRD0001\ntype: uint16\ndimension: 4\nsizes: 5 7 3 4\nkinds: space space space time\nencoding: raw\nendian: little\n"
 
 # Optional fields
 MHz = u"MHz"
 μs = u"μs"
-@test isnan(img["imagineheader"]["readout rate"]) && isnan(img2["imagineheader"]["readout rate"]) #marked as NA in test.imagine
-@test img["imagineheader"]["vertical shift speed"] == img2["imagineheader"]["vertical shift speed"] == 1.9176μs
+@test isnan(img.imagineheader["readout rate"]) && isnan(img2.imagineheader["readout rate"]) #marked as NA in test.imagine
+@test img.imagineheader["vertical shift speed"] == img2.imagineheader["vertical shift speed"] == 1.9176μs
 
 h = ImagineFormat.parse_header("test_noshift.imagine")
 h["byte order"] = ENDIAN_BOM == 0x04030201 ? "l" : "b"
