@@ -1,7 +1,7 @@
 name = "ImagineFormat"
 uuid = "4bab44a2-5ff2-5a6b-8e10-825fb9ac126a"
 author = ["Tim Holy <tim.holy@gmail.com>"]
-version = "1.1.1"
+version = "1.2.0"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
