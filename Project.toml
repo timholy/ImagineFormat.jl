@@ -15,7 +15,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [compat]
 AxisArrays = "0.3, 0.4"
 FileIO = "1"
-FixedPointNumbers = "0.6.1, 0.7"
+FixedPointNumbers = "0.6.1, 0.7, 0.8"
 ImageMetadata = "0.9"
 Unitful = "0.14, 0.15, 0.16, 0.17, 0.18"
 julia = "1"
