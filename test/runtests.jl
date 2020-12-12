@@ -1,4 +1,4 @@
-using Images, FixedPointNumbers, Unitful, Test, Random
+using ImageCore, ImageMetadata.ImageAxes, FileIO, FixedPointNumbers, Unitful, Test, Random
 import ImagineFormat
 
 μm = u"μm"
