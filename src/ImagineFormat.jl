@@ -12,7 +12,7 @@ const μs = u"μs"
 const MHz = u"MHz"
 
 function load(f::File{format"Imagine"}; mode="r")
-    fabs = File(format"Imagine", abspath(f.filename))
+    fabs = File{format"Imagine"}(abspath(f.filename))
     open(fabs) do s
         skipmagic(s)
         load(s, mode=mode)
