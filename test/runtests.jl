@@ -66,7 +66,7 @@ end
 
 B = BidiImageArray(A)
 for z = 1:zsize
-    @test all(B[:,:,z,:].==z) #getindex
+    @test all(@inferred(B[:,:,z,:]).==z) #getindex
     B[:,:,z,:] .= zsize-z+1 #setindex!
     @test all(B[:,:,z,:].==zsize-z+1)
 end
