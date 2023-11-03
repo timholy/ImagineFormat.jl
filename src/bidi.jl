@@ -1,8 +1,8 @@
 import Base: size, getindex, setindex!
 
 #z indices are flipped for even-numbered timepoints
-struct BidiImageArray{T} <: AbstractArray{T,4}
-    A::AbstractArray{T,4}
+struct BidiImageArray{T,P<:AbstractArray{T,4}} <: AbstractArray{T,4}
+    A::P
     z_size::Int
 end
 

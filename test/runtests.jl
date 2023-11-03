@@ -49,7 +49,10 @@ h2 = ImagineFormat.parse_header(ifn)
 rm(ifn)
 img2 = 0
 GC.gc(); GC.gc(); GC.gc()
-rm(cfn)
+try
+    rm(cfn)    # this can fail on Windows
+catch
+end
 
 #test BidiImageArrays
 A = ones(2,2,4,5)
@@ -66,7 +69,7 @@ end
 
 B = BidiImageArray(A)
 for z = 1:zsize
-    @test all(B[:,:,z,:].==z) #getindex
+    @test all(@inferred(B[:,:,z,:]).==z) #getindex
     B[:,:,z,:] .= zsize-z+1 #setindex!
     @test all(B[:,:,z,:].==zsize-z+1)
 end
