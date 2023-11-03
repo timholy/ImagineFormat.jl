@@ -49,7 +49,10 @@ h2 = ImagineFormat.parse_header(ifn)
 rm(ifn)
 img2 = 0
 GC.gc(); GC.gc(); GC.gc()
-rm(cfn)
+try
+    rm(cfn)    # this can fail on Windows
+catch
+end
 
 #test BidiImageArrays
 A = ones(2,2,4,5)
