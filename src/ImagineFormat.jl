@@ -58,8 +58,9 @@ function load(io::Stream{format"Imagine"}; mode="r")
     pstart = h["piezo"]["stop position"]
     pstop = h["piezo"]["start position"]
     if length(sz)>2
-        dz = abs(pstart - pstop)/(sz[3]-1)
-    else dz = 0.0 end
+        #Setting dz to something > 0.0 prevents an error when creating an AxisArray with a zero step
+        dz = (pstart == pstop) ? 1.0 : abs(pstart - pstop)/(sz[3]-1)
+    end
 
     axisnames = havez ? (:x, :l, :z) : (:x, :l)
     pixelspacing = havez ? (um_per_pixel, um_per_pixel, dz) : (um_per_pixel, um_per_pixel)
